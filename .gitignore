@@ -1,0 +1,8 @@
+hacpack_backup/
+Build*/*
+build
+.vscode/
+ExeFs/*
+Control/*
+prod.keys
+Browser.*
