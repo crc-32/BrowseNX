@@ -32,9 +32,15 @@ int main(int argc, char* argv[])
                 swkbdConfigSetInitialText(&kbd, "https://");
                 rc = swkbdShow(&kbd, tmpoutstr, sizeof(tmpoutstr));
                 if(R_SUCCEEDED(rc)) {
-                    strcpy(url, tmpoutstr);
-                }else{
-                    fatalSimple(rc);
+                    if(tmpoutstr != 0) {
+                        strcpy(url, tmpoutstr);
+                    }
+                }else if(rc != (Result) 0x5d59) {
+                    printf("Error with URL");
+                    consoleUpdate(NULL);
+                    while(1){
+                        svcSleepThread(100000);
+                    }
                 }
             }else{
                 fatalSimple(rc);
@@ -43,7 +49,7 @@ int main(int argc, char* argv[])
             break;
         }
         i++;
-        if(i >= 60){
+        if(i >= 60*2){
             break;
         }
         consoleUpdate(NULL);
