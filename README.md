@@ -13,8 +13,8 @@ _To build BrowseNX, please supply your own prod.keys._
  - prod.keys file at the repo root
 
 ### Windows
-You need to have devkitpro installed with msys, including command prompt support for msys-specific commands like `mv`
-Run `buildwin.bat`
+ - You need to have devkitpro installed with msys, including command prompt support for msys-specific commands like `mv`
+ - Run `buildwin.bat`
 
 ### Linux
-Run `build.sh`
+ - Run `build.sh`
