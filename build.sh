@@ -6,6 +6,7 @@ mkdir Build.nsp
 mkdir Build.program
 mkdir Control
 mkdir ExeFs
+mkdir RomFs
 rm ./Build*/*.nca
 rm ./Control/control.nacp
 rm ./ExeFs/*
