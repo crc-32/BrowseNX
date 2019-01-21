@@ -1,5 +1,7 @@
 # NXBrowser
-Launches the browser via nsp
+Launches the Internet Browser applet within a NSP.
 
 ## Credit
-Credit to XorTroll for working out the browser applet arguments and for the nsp structure/build method.
+XorTroll - Working out the browser applet arguments and for the nsp structure/build method.
+The-4n - Making legal NSP packing easy.
+Switchbrew - NPDMTool
