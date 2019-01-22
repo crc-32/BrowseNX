@@ -36,11 +36,13 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-#ROMFS	:=	romfs
+ROMFS	:=	RomFs
 
 APP_TITLE := Browser
 APP_AUTHOR := For The Users
-APP_VERSION := 0.1.0
+APP_VERSION := 0.1.1
+APP_TITLEID := 0100C4C320C0FFEE
+ICON := Control/icon_AmericanEnglish.dat
 
 #---------------------------------------------------------------------------------
 # options for code generation

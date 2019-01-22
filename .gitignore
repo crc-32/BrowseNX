@@ -3,6 +3,6 @@ Build*/*
 build
 .vscode/
 ExeFs/*
-Control/*
+Control/control.nacp
 prod.keys
 Browser.*
