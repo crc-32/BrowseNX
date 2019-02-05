@@ -5,6 +5,7 @@
 
 // Include the main libnx system header, for Switch development
 #include <switch.h>
+#include "web_wifi.h"
 
 void showError(char* errorText1, char* errorText2, Result outrc)
 {
@@ -28,7 +29,7 @@ void showError(char* errorText1, char* errorText2, Result outrc)
 
     appletHolderStart(&err);
     appletHolderJoin(&err);
-    svcExitProcess();
+    exit(1);
 }
 
 SwkbdTextCheckResult validate_text(char* tmp_string, size_t tmp_string_size) {
@@ -83,20 +84,47 @@ int showKeyboard(char out[0xc00], char* title, char* placehold, char* oktxt, cha
     swkbdClose(&kbd);
     return -1;
 }
+void startAuthApplet(char* url) {
+    Result rc=0;
+    // TODO: Move to libnx impl once its in a stable release
+    WebWifiConfig config;
+    webWifiCreate(&config, url);
+    rc = webWifiShow(&config);
+    if(R_FAILED(rc)) {
+        showError("Browser Error", "Lookup errorcode for more info", rc);
+    }
+}
 
 int main(int argc, char* argv[])
 {
+    void *haddr;
+    if(!envIsNso()){
+        // Heap trick to give some memory to the applet pool, otherwise won't work from album
+        svcSetHeapSize(&haddr, 0x13001000);
+    }
     Result rc=0;
     int i = 0;
     char url[0xc00] = {0};
     AppletHolder aHold;
     AppletStorage aStore;
     LibAppletArgs aArgs;
+    nsvmInitialize();
     consoleInit(NULL);
     strcpy(url, "https://dns.switchbru.com");
-    printf("Press L to choose url\n");
-    printf("Press R to set default url\n");
-    printf("Press X to reset default url\n");
+    printf("Press [L] to choose url\n");
+    printf("Press [R] to set default url\n");
+    printf("Press [X] to reset default url\n");
+    if(!envIsNso()){
+        printf(CONSOLE_RED "NRO Mode, launching limited browser!\n");
+    }else {
+        printf("Press [-] to launch as auth applet " CONSOLE_RED "(LIMITED FEATURES)");
+    }
+    bool nagOn;
+    nsvmNeedsUpdateVulnerability(&nagOn);
+    if(nagOn) {
+        showError("Error: Nag active, check more details", "Browser won't launch if supernag is active\n\nUse gagorder or switch-sys-tweak (the latter is bundled with BrowseNX) to disable supernag.", 0);
+    }
+    bool forceAuth = false;
     while(appletMainLoop()) {
         hidScanInput();
         u64 kDown = hidKeysHeld(CONTROLLER_P1_AUTO);
@@ -120,6 +148,8 @@ int main(int argc, char* argv[])
             }
         } else if(kDown & KEY_X) {
             remove("sdmc:/defUrl.txt");
+        } else if(kDown & KEY_MINUS) {
+            forceAuth = true;
         }
         i++;
         if(i >= 60*2){
@@ -128,6 +158,7 @@ int main(int argc, char* argv[])
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
+    nsvmExit();
 
     FILE* dUFile = fopen("sdmc:/defUrl.txt", "r");
     char fURL[0xc00] = {0};
@@ -140,40 +171,43 @@ int main(int argc, char* argv[])
             showError("Default URL file error, check more details", fURL, 0);
         }
     }
+    if(envIsNso() && !forceAuth) { // Running as a title
+        rc = appletCreateLibraryApplet(&aHold, AppletId_web, LibAppletMode_AllForeground);
+        if(R_FAILED(rc)) {
+            showError("Error launching browser", "Error initializing applet", rc);
+        }
+        libappletArgsCreate(&aArgs, 0x50000);
+        libappletArgsPush(&aArgs, &aHold);
+        rc = appletCreateStorage(&aStore, 8192);
+        if(R_FAILED(rc)) {
+            showError("Error launching browser", "Error initializing arg storage", rc);
+        }
 
-    rc = appletCreateLibraryApplet(&aHold, AppletId_web, LibAppletMode_AllForeground);
-    if(R_FAILED(rc)) {
-        showError("Error launching browser", "Error initializing applet", rc);
-    }
-    libappletArgsCreate(&aArgs, 0x50000);
-    libappletArgsPush(&aArgs, &aHold);
-    rc = appletCreateStorage(&aStore, 8192);
-    if(R_FAILED(rc)) {
-        showError("Error launching browser", "Error initializing arg storage", rc);
-    }
+        u8 indata[8192] = {0};
+        *(u64*)&indata[4] = 281530811285509;
+        *(u64*)&indata[17] = 201326593;
+        *(u8*)&indata[16] = 1;
+        *(u16*)indata = 2;
+        strcpy((char*)&indata[25], url);
 
-    u8 indata[8192] = {0};
-    *(u64*)&indata[4] = 281530811285509;
-    *(u64*)&indata[17] = 201326593;
-    *(u8*)&indata[16] = 1;
-    *(u16*)indata = 2;
-    strcpy((char*)&indata[25], url);
-
-    rc = appletStorageWrite(&aStore, 0, indata, 8192);
-    if(R_FAILED(rc)) {
-        showError("Error launching browser", "Error writing arg storage", rc);
+        rc = appletStorageWrite(&aStore, 0, indata, 8192);
+        if(R_FAILED(rc)) {
+            showError("Error launching browser", "Error writing arg storage", rc);
+        }
+        appletHolderPushInData(&aHold, &aStore);
+        rc = appletHolderStart(&aHold);
+        if(R_FAILED(rc)) {
+            showError("Error launching browser", "Lookup errorcode for more info", rc);
+        }
+        appletHolderJoin(&aHold);
+        LibAppletExitReason e = appletHolderGetExitReason(&aHold);
+        if(e != LibAppletExitReason_Normal) {
+            showError("Browser Error", "Lookup errorcode for more info", rc);
+        }
+        appletHolderClose(&aHold);
+        appletStorageClose(&aStore);
+    } else { // Running under HBL
+        startAuthApplet(url);
     }
-    appletHolderPushInData(&aHold, &aStore);
-    rc = appletHolderStart(&aHold);
-    if(R_FAILED(rc)) {
-        showError("Error launching browser", "Lookup errorcode for more info", rc);
-    }
-    appletHolderJoin(&aHold);
-    LibAppletExitReason e = appletHolderGetExitReason(&aHold);
-    if(e != LibAppletExitReason_Normal && e != LibAppletExitReason_Canceled) {
-        showError("Browser Error", "Lookup errorcode for more info", rc);
-    }
-    appletHolderClose(&aHold);
-    appletStorageClose(&aStore);
     return 0;
 }
