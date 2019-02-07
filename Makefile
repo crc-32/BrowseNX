@@ -40,7 +40,7 @@ ROMFS	:=	RomFs
 
 APP_TITLE := Browser
 APP_AUTHOR := For The Users
-APP_VERSION := 0.2.0
+APP_VERSION := 0.3.0
 APP_TITLEID := 0100C4C320C0FFEE
 ICON := Control/icon_AmericanEnglish.dat
 

@@ -100,7 +100,8 @@ int main(int argc, char* argv[])
     void *haddr;
     if(!envIsNso()){
         // Heap trick to give some memory to the applet pool, otherwise won't work from album
-        svcSetHeapSize(&haddr, 0x13001000);
+        // FIXME: Album still doesn't work
+        // svcSetHeapSize(&haddr, 0x13001000);
     }
     Result rc=0;
     int i = 0;
