@@ -110,6 +110,7 @@ int main(int argc, char* argv[])
     AppletStorage aStore;
     LibAppletArgs aArgs;
     nsvmInitialize();
+    pminfoInitialize();
     consoleInit(NULL);
     strcpy(url, "https://dns.switchbru.com");
     printf("Press [L] to choose url\n");
@@ -123,7 +124,24 @@ int main(int argc, char* argv[])
     bool nagOn;
     nsvmNeedsUpdateVulnerability(&nagOn);
     if(nagOn) {
-        showError("Error: Nag active, check more details", "Browser won't launch if supernag is active\n\nUse gagorder or switch-sys-tweak (the latter is bundled with BrowseNX) to disable supernag.", 0);
+        u32 pCount;
+        u64 pids[100];
+        u64 cId;
+        u32 i = 0;
+        bool isPatched = false;
+        svcGetProcessList(&pCount, pids, 100);
+        while (i <= pCount-1) {
+            pminfoGetTitleId(&cId, pids[i]);
+            if(cId == 0x00FF747765616BFF || cId == 0x01FF415446660000) {
+                printf(CONSOLE_GREEN "Supernag enabled, but patched via switch-sys-tweak!\n");
+                isPatched = true;
+                break;
+            }
+            i++;
+        }
+        if(!isPatched){
+            showError("Error: Nag active, check more details", "Browser won't launch if supernag is active\n\nUse gagorder or switch-sys-tweak (the latter is bundled with BrowseNX) to disable supernag.", 0);
+        }
     }
     bool forceAuth = false;
     while(appletMainLoop()) {
@@ -159,6 +177,7 @@ int main(int argc, char* argv[])
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
+    pminfoExit();
     nsvmExit();
 
     FILE* dUFile = fopen("sdmc:/defUrl.txt", "r");
