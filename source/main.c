@@ -5,7 +5,6 @@
 
 // Include the main libnx system header, for Switch development
 #include <switch.h>
-#include "web_wifi.h"
 
 void showError(char* errorText1, char* errorText2, Result outrc)
 {
@@ -76,10 +75,10 @@ int showKeyboard(char out[0xc00], char* title, char* placehold, char* oktxt, cha
                 return 0;
             }
         }else if(rc != (Result) 0x5d59) {
-            showError("Software Keyboard Error", "Unknown error, Lookup errorcode for more info", rc);
+            showError("Software Keyboard Error\nLookup errorcode for more info", "", rc);
         }
     }else{
-        showError("Software Keyboard Error", "Unknown error, Lookup errorcode for more info", rc);
+        showError("Software Keyboard Error\nLookup errorcode for more info", "", rc);
     }
     swkbdClose(&kbd);
     return -1;
@@ -88,27 +87,19 @@ void startAuthApplet(char* url) {
     Result rc=0;
     // TODO: Move to libnx impl once its in a stable release
     WebWifiConfig config;
-    webWifiCreate(&config, url);
-    rc = webWifiShow(&config);
+    webWifiCreate(&config, NULL, url, 0 , 0);
+    WebWifiReturnValue out;
+    rc = webWifiShow(&config, &out);
     if(R_FAILED(rc)) {
-        showError("Browser Error", "Lookup errorcode for more info", rc);
+        showError("Browser Error\nLookup errorcode for more info", "", rc);
     }
 }
 
 int main(int argc, char* argv[])
 {
-    void *haddr;
-    if(!envIsNso()){
-        // Heap trick to give some memory to the applet pool, otherwise won't work from album
-        // FIXME: Album still doesn't work
-        // svcSetHeapSize(&haddr, 0x13001000);
-    }
     Result rc=0;
     int i = 0;
     char url[0xc00] = {0};
-    AppletHolder aHold;
-    AppletStorage aStore;
-    LibAppletArgs aArgs;
     nsvmInitialize();
     pminfoInitialize();
     consoleInit(NULL);
@@ -116,11 +107,7 @@ int main(int argc, char* argv[])
     printf("Press [L] to choose url\n");
     printf("Press [R] to set default url\n");
     printf("Press [X] to reset default url\n");
-    if(!envIsNso()){
-        printf(CONSOLE_RED "NRO Mode, launching limited browser!\n");
-    }else {
-        printf("Press [-] to launch as auth applet " CONSOLE_RED "(LIMITED FEATURES)");
-    }
+    printf("Press [-] to launch as auth applet " CONSOLE_RED "(LIMITED FEATURES)");
     bool nagOn;
     nsvmNeedsUpdateVulnerability(&nagOn);
     if(nagOn) {
@@ -191,43 +178,21 @@ int main(int argc, char* argv[])
             showError("Default URL file error, check more details", fURL, 0);
         }
     }
-    if(envIsNso() && !forceAuth) { // Running as a title
-        rc = appletCreateLibraryApplet(&aHold, AppletId_web, LibAppletMode_AllForeground);
-        if(R_FAILED(rc)) {
-            showError("Error launching browser", "Error initializing applet", rc);
-        }
-        libappletArgsCreate(&aArgs, 0x50000);
-        libappletArgsPush(&aArgs, &aHold);
-        rc = appletCreateStorage(&aStore, 8192);
-        if(R_FAILED(rc)) {
-            showError("Error launching browser", "Error initializing arg storage", rc);
-        }
-
-        u8 indata[8192] = {0};
-        *(u64*)&indata[4] = 281530811285509;
-        *(u64*)&indata[17] = 201326593;
-        *(u8*)&indata[16] = 1;
-        *(u16*)indata = 2;
-        strcpy((char*)&indata[25], url);
-
-        rc = appletStorageWrite(&aStore, 0, indata, 8192);
-        if(R_FAILED(rc)) {
-            showError("Error launching browser", "Error writing arg storage", rc);
-        }
-        appletHolderPushInData(&aHold, &aStore);
-        rc = appletHolderStart(&aHold);
-        if(R_FAILED(rc)) {
-            showError("Error launching browser", "Lookup errorcode for more info", rc);
-        }
-        appletHolderJoin(&aHold);
-        LibAppletExitReason e = appletHolderGetExitReason(&aHold);
-        if(e != LibAppletExitReason_Normal) {
-            showError("Browser Error", "Lookup errorcode for more info", rc);
-        }
-        appletHolderClose(&aHold);
-        appletStorageClose(&aStore);
-    } else { // Running under HBL
-        startAuthApplet(url);
+    if(appletGetAppletType() == AppletType_Application && !forceAuth) { // Running as a title
+        WebCommonConfig conf;
+        WebCommonReply out;
+        rc = webPageCreate(&conf, url);
+        if (R_FAILED(rc))
+            showError("Error starting Browser\nLookup error code for more info", "", rc);
+        webConfigSetJsExtension(&conf, true);
+        webConfigSetPageCache(&conf, true);
+        webConfigSetBootLoadingIcon(&conf, true);
+        webConfigSetWhitelist(&conf, ".*");
+        rc = webConfigShow(&conf, &out);
+        if (R_FAILED(rc))
+            showError("Error starting Browser\nLookup error code for more info", "", rc);
+    } else { // Running under applet
+        showError("Running in applet mode\nPlease launch hbmenu by holding R on an APP (e.g. a game) NOT an applet (e.g. Gallery)", "", 0);
     }
     return 0;
 }
