@@ -87,7 +87,7 @@ void startAuthApplet(char* url) {
     Result rc=0;
     // TODO: Move to libnx impl once its in a stable release
     WebWifiConfig config;
-    webWifiCreate(&config, NULL, url, 0 , 0);
+    webWifiCreate(&config, NULL, url, (Uuid) {0} , 0);
     WebWifiReturnValue out;
     rc = webWifiShow(&config, &out);
     if(R_FAILED(rc)) {
@@ -111,14 +111,14 @@ int main(int argc, char* argv[])
     bool nagOn;
     nsvmNeedsUpdateVulnerability(&nagOn);
     if(nagOn) {
-        u32 pCount;
+        s32 pCount;
         u64 pids[100];
         u64 cId;
         u32 i = 0;
         bool isPatched = false;
         svcGetProcessList(&pCount, pids, 100);
         while (i <= pCount-1) {
-            pminfoGetTitleId(&cId, pids[i]);
+            pminfoGetProgramId(&cId, pids[i]);
             if(cId == 0x00FF747765616BFF || cId == 0x01FF415446660000) {
                 printf(CONSOLE_GREEN "Supernag enabled, but patched via switch-sys-tweak!\n");
                 isPatched = true;
