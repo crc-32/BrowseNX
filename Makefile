@@ -36,7 +36,7 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-ROMFS	:=	RomFs
+#ROMFS	:=	RomFs
 
 APP_TITLE := Browser
 APP_AUTHOR := For The Users

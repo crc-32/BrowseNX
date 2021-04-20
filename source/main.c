@@ -12,7 +12,7 @@ void showError(char* errorText1, char* errorText2, Result outrc)
     AppletStorage errStor;
     LibAppletArgs errArgs;
 
-    appletCreateLibraryApplet(&err, AppletId_error, LibAppletMode_AllForeground);
+    appletCreateLibraryApplet(&err, AppletId_LibraryAppletError, LibAppletMode_AllForeground);
     libappletArgsCreate(&errArgs, 1);
     libappletArgsPush(&errArgs, &err);
     appletCreateStorage(&errStor, 4120);
@@ -103,6 +103,11 @@ int main(int argc, char* argv[])
     nsvmInitialize();
     pminfoInitialize();
     consoleInit(NULL);
+
+    PadState pad;
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    padInitializeDefault(&pad);
+
     strcpy(url, "https://dns.switchbru.com");
     printf("Press [L] to choose url\n");
     printf("Press [R] to set default url\n");
@@ -132,8 +137,8 @@ int main(int argc, char* argv[])
     }
     bool forceAuth = false;
     while(appletMainLoop()) {
-        hidScanInput();
-        u64 kDown = hidKeysHeld(CONTROLLER_P1_AUTO);
+        padUpdate(&pad);
+        u64 kDown = padGetButtons(&pad);
         if(kDown & KEY_L) {
             showKeyboard(url, "Choose URL", "Enter a URL", "Go", "https://");
             break;
