@@ -138,11 +138,11 @@ int main(int argc, char* argv[])
     bool forceAuth = false;
     while(appletMainLoop()) {
         padUpdate(&pad);
-        u64 kDown = padGetButtons(&pad);
-        if(kDown & KEY_L) {
+        u64 kDown = padGetButtonsDown(&pad);
+        if(kDown & HidNpadButton_L) {
             showKeyboard(url, "Choose URL", "Enter a URL", "Go", "https://");
             break;
-        } else if(kDown & KEY_R) {
+        } else if(kDown & HidNpadButton_R) {
             char defUrl[0xc00] = {0};
             char fURL[0xc00] = {0};
             FILE* dUCheck = fopen("sdmc:/defUrl.txt", "r");
@@ -157,9 +157,9 @@ int main(int argc, char* argv[])
                 fprintf(dUFile, "%s", defUrl);
                 fclose(dUFile);
             }
-        } else if(kDown & KEY_X) {
+        } else if(kDown & HidNpadButton_X) {
             remove("sdmc:/defUrl.txt");
-        } else if(kDown & KEY_MINUS) {
+        } else if(kDown & HidNpadButton_Plus) {
             forceAuth = true;
         }
         i++;
